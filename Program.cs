@@ -137,14 +137,14 @@ namespace ConsoleApp_DAE
             Graphics graphics = Graphics.FromImage(image);
 
             // Set up the orthographic camera parameters
-            double left = Ymin; // Set the left boundary of the camera viewport
-            double right = Ymax; // Set the right boundary of the camera viewport
-            double bottom = Xmin; // Set the bottom boundary of the camera viewport
-            double top = Xmax; // Set the top boundary of the camera viewport
+            double left = Xmin; // Set the left boundary of the camera viewport
+            double right = Xmax; // Set the right boundary of the camera viewport
+            double bottom = Ymin; // Set the bottom boundary of the camera viewport
+            double top = Ymax; // Set the top boundary of the camera viewport
             double near = 0.1; // Set the near clipping plane distance
             double far = 10000; // Set the far clipping plane distance
 
-            var coord = coordenadas[3];
+            var coord = coordenadas[0];
 
 
             Vector3 cameraPosition = new Vector3((float)coord.Item2, (float)coord.Item3, (float)coord.Item4);
@@ -153,8 +153,8 @@ namespace ConsoleApp_DAE
 
             Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter((float)left, (float)right, (float)bottom, (float)top, (float)near, (float)far);
             Matrix4x4 view = Matrix4x4.CreateLookAt(cameraPosition, cameraTarget, up);
-            var scale = Matrix4x4.CreateScale(1.5f,1f,1f);
-            scale.Translation = new Vector3(width/2, 450f, 1f);
+            var scale = Matrix4x4.CreateScale(2f,1f,1f);
+            scale.Translation = new Vector3(400, 450f, 1f);
 
             Matrix4x4 TMatrix = projectionMatrix * view * scale;
 

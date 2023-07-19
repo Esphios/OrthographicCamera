@@ -1,11 +1,6 @@
-﻿using System.IO;
+﻿using System.Numerics;
 using System.Xml;
-
 using Assimp;
-
-using System.Drawing;
-using Matrix4x4 = System.Numerics.Matrix4x4;
-using System.Numerics;
 
 namespace ConsoleApp_DAE
 {
@@ -21,8 +16,8 @@ namespace ConsoleApp_DAE
         }
         static void Main(string[] args)
         {
-            #pragma warning disable CS8602 // Desreferência de uma referência possivelmente nula.
-            #pragma warning disable CA1416 // Validar a compatibilidade da plataforma
+#pragma warning disable CS8602 // Desreferência de uma referência possivelmente nula.
+#pragma warning disable CA1416 // Validar a compatibilidade da plataforma
             string path = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
 
             // lê o arquivo DAE
@@ -50,14 +45,14 @@ namespace ConsoleApp_DAE
             }
 
             // identifica as dimenções do objeto
-            Double Xmax = 0;
-            Double Xmin = 0;
-            Double Ymax = 0;
-            Double Ymin = 0;
-            Double Zmax = 0;
-            Double Zmin = 0;
+            float Xmax = 0;
+            float Xmin = 0;
+            float Ymax = 0;
+            float Ymin = 0;
+            float Zmax = 0;
+            float Zmin = 0;
 
-            List<string> Vertices3D = new List<string>();
+            List<Vector3> Vertices3D = new List<Vector3>();
             foreach (string Vertice in Vertices)
             {
                 // remove o "_" para que as coordenadas sejam separadas
@@ -67,9 +62,11 @@ namespace ConsoleApp_DAE
                 if (Coords.Length == 3)
                 {
                     // recupera o vertice
-                    Double X = Convert.ToDouble(Coords[0]);
-                    Double Y = Convert.ToDouble(Coords[1]);
-                    Double Z = Convert.ToDouble(Coords[2]);
+                    float X = (float)Convert.ToDouble(Coords[0]);
+                    float Y = (float)Convert.ToDouble(Coords[1]);
+                    float Z = (float)Convert.ToDouble(Coords[2]);
+
+                    Vertices3D.Add(new Vector3(X,Y,Z));
 
                     // verifica se são considerados para identificar os extremos do objeto
                     if ((Xmax == 0) || (X > Xmax)) Xmax = X;
@@ -77,7 +74,7 @@ namespace ConsoleApp_DAE
                     if ((Ymax == 0) || (Y > Ymax)) Ymax = Y;
                     if ((Ymin == 0) || (Y < Ymin)) Ymin = Y;
                     if ((Zmax == 0) || (Z > Zmax)) Zmax = Z;
-                    if ((Zmin == 0) || (Z > Zmin)) Zmin = Z;
+                    if ((Zmin == 0) || (Z < Zmin)) Zmin = Z;
                 }
             }
 
@@ -126,86 +123,6 @@ namespace ConsoleApp_DAE
                 string coordenadaFormatada = String.Format("Angulo: {0,10} X: {1,10:F2} Y: {2,10:F2} Z: {3,10:F2}", coordenada.Item1, coordenada.Item2, coordenada.Item3, coordenada.Item4);
                 Console.WriteLine(coordenadaFormatada);
             }
-
-
-            var importer = new AssimpContext();
-            var scene = importer.ImportFile($"{path}\\assets\\Car_Sedan_White_v4.dae", PostProcessPreset.TargetRealTimeMaximumQuality);
-
-            int width = 800; // Set the desired width of the output image
-            int height = 600; // Set the desired height of the output image
-            Bitmap image = new Bitmap(width, height);
-            Graphics graphics = Graphics.FromImage(image);
-
-            // Set up the orthographic camera parameters
-            double left = Xmin; // Set the left boundary of the camera viewport
-            double right = Xmax; // Set the right boundary of the camera viewport
-            double bottom = Ymin; // Set the bottom boundary of the camera viewport
-            double top = Ymax; // Set the top boundary of the camera viewport
-            double near = 0.1; // Set the near clipping plane distance
-            double far = 10000; // Set the far clipping plane distance
-
-            var coord = coordenadas[0];
-
-
-            Vector3 cameraPosition = new Vector3((float)coord.Item2, (float)coord.Item3, (float)coord.Item4);
-            Vector3 cameraTarget = new Vector3((float)Xcenter, (float)Ycenter, (float)Zcenter);
-            Vector3 up = new Vector3(0.0f, -1.0f, 0.0f);
-
-            Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter((float)left, (float)right, (float)bottom, (float)top, (float)near, (float)far);
-            Matrix4x4 view = Matrix4x4.CreateLookAt(cameraPosition, cameraTarget, up);
-            var scale = Matrix4x4.CreateScale(2f,1f,1f);
-            scale.Translation = new Vector3(400, 450f, 1f);
-
-            Matrix4x4 TMatrix = projectionMatrix * view * scale;
-
-
-            // Apply the projection matrix to the Graphics object
-            graphics.Transform = new System.Drawing.Drawing2D.Matrix(TMatrix.M11, TMatrix.M12,
-                                                                    TMatrix.M21, TMatrix.M22,
-                                                                    TMatrix.M41, TMatrix.M42);
-
-
-            foreach (var mesh in scene.Meshes)
-            {
-                foreach (var face in mesh.Faces)
-                {
-                    if (face.IndexCount == 3)
-                    {
-                        // Get the vertices for the current face
-                        Vector3D vertex1 = mesh.Vertices[face.Indices[0]];
-                        Vector3D vertex2 = mesh.Vertices[face.Indices[1]];
-                        Vector3D vertex3 = mesh.Vertices[face.Indices[2]];
-
-                        //// Use the Graphics object to draw the face onto the rendering surface
-                        //graphics.DrawPolygon(Pens.Black, new[] {
-                        //    new System.Drawing.PointF((vertex1.X) * 200,(vertex1.Y) * 200),
-                        //    new System.Drawing.PointF((vertex2.X) * 200,(vertex2.Y) * 200),
-                        //    new System.Drawing.PointF((vertex3.X) * 200,(vertex3.Y) * 200),
-                        //});
-
-                        if (mesh.MaterialIndex == 3)
-                        {
-                            // 3 -> Lataria (Branco)
-                            // 0 -> Azul
-                            // 4 -> Preto
-                            mesh.MaterialIndex = 0;
-                        }
-
-                        Color4D rgba = scene.Materials[mesh.MaterialIndex].ColorDiffuse;
-                        byte[] argb = RgbaToArgb(rgba);
-
-                        // Use the Graphics object to draw the face onto the rendering surface
-                        graphics.FillPolygon(new SolidBrush(System.Drawing.Color.FromArgb(argb[0], argb[1], argb[2], argb[3])), new[] {
-                            new System.Drawing.PointF((vertex1.X) * 200,(vertex1.Y) * 200),
-                            new System.Drawing.PointF((vertex2.X) * 200,(vertex2.Y) * 200),
-                            new System.Drawing.PointF((vertex3.X) * 200,(vertex3.Y) * 200),
-                        });
-
-                    }
-                }
-            }
-
-            image.Save($"{path}\\output.jpg");
         }
     }
 }
